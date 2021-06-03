@@ -25,6 +25,7 @@
 /********************************************************************************/
 
 static uint16_t ps3_gap_init_service( char *name, uint16_t psm, uint8_t security_id);
+static uint16_t ps3_gap_close_service(uint16_t handle);
 static void ps3_gap_event_handle(UINT16 gap_handle, UINT16 event);
 static void ps3_gap_update_connected ();
 
@@ -37,6 +38,8 @@ static tL2CAP_CFG_INFO ps3_cfg_info = {0};
 
 uint16_t gap_handle_hidc = GAP_INVALID_HANDLE;
 uint16_t gap_handle_hidi = GAP_INVALID_HANDLE;
+
+uint16_t reinit = 0;
 
 static bool is_connected = false;
 
@@ -56,6 +59,15 @@ static bool is_connected = false;
 *******************************************************************************/
 bool ps3_gap_is_connected()
 {
+	if (reinit > 0)
+	{
+		reinit--;
+		if (reinit == 0)
+		{
+			ps3_gap_init_services();
+		}
+	}
+
     return is_connected;
 }
 
@@ -70,7 +82,10 @@ bool ps3_gap_is_connected()
 *******************************************************************************/
 void ps3_gap_init_services()
 {
-    gap_handle_hidc = ps3_gap_init_service( "PS3-HIDC", BT_PSM_HIDC, BTM_SEC_SERVICE_FIRST_EMPTY   );
+
+	if (gap_handle_hidc != GAP_INVALID_HANDLE) ps3_gap_close_service(gap_handle_hidc);
+	if (gap_handle_hidi != GAP_INVALID_HANDLE) ps3_gap_close_service(gap_handle_hidi);
+	gap_handle_hidc = ps3_gap_init_service( "PS3-HIDC", BT_PSM_HIDC, BTM_SEC_SERVICE_FIRST_EMPTY   );
     gap_handle_hidi = ps3_gap_init_service( "PS3-HIDI", BT_PSM_HIDI, BTM_SEC_SERVICE_FIRST_EMPTY+1 );
 }
 
@@ -138,6 +153,19 @@ static uint16_t ps3_gap_init_service( char *name, uint16_t psm, uint8_t security
     return handle;
 }
 
+/*******************************************************************************
+*******************************************************************************/
+static uint16_t ps3_gap_close_service( uint16_t handle)
+{
+	uint16_t err = GAP_ConnClose(handle);
+
+	if (err == GAP_INVALID_HANDLE) {
+		ESP_LOGE(PS3_TAG, "%s Unregistering GAP service failed", __func__);
+	}
+
+	return err;
+}
+
 
 /*******************************************************************************
 **
@@ -151,15 +179,19 @@ static uint16_t ps3_gap_init_service( char *name, uint16_t psm, uint8_t security
 *******************************************************************************/
 static void ps3_gap_event_handle(UINT16 gap_handle, UINT16 event)
 {
-    switch(event){
+	switch(event){
         case GAP_EVT_CONN_OPENED:
         case GAP_EVT_CONN_CLOSED:{
-            uint8_t was_connected = is_connected;
+			uint8_t was_connected = is_connected;
             ps3_gap_update_connected();
 
             if(was_connected != is_connected){
                 ps3_connect_event(is_connected);
+
+
+				if (!is_connected) reinit = 1;
             }
+
 
             break;
         }

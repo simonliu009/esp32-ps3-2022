@@ -64,6 +64,7 @@ void ps3Init()
 *******************************************************************************/
 bool ps3IsConnected()
 {
+	ps3_gap_is_connected(); //call to be able to reinit
     return is_active;
 }
 
@@ -263,7 +264,22 @@ void ps3_connect_event( uint8_t is_connected )
     if(is_connected){
         ps3Enable();
     }else{
-        is_active = false;
+
+		if (is_active)
+		{
+			is_active = false;
+
+			if (ps3_connection_cb != NULL)
+			{
+				ps3_connection_cb(is_active);
+			}
+
+			if (ps3_connection_object_cb != NULL && ps3_connection_object != NULL)
+			{
+				ps3_connection_object_cb(ps3_connection_object, is_active);
+			}
+
+		}
     }
 }
 
