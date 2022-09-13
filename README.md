@@ -1,4 +1,9 @@
 
+> This is a fork of [RomanLut/esp32-ps3: Control your ESP32 projects with a PS3 controller!](https://github.com/RomanLut/esp32-ps3) which is fork of [jvpernis/esp32-ps3: Control your ESP32 projects with a PS3 controller!](https://github.com/jvpernis/esp32-ps3).
+> The [RomanLut fork] has a [branch](https://github.com/RomanLut/esp32-ps3/tree/1.0.0_with_reconnect_fixed) that fixes the connection/disconnection issue but `ps3_l2cap.c` is missing in this fixed branch.
+
+So I add the missing `ps3_l2cap.c` file and also add `CMakeLists.txt` for the ps3 component to support IDF4.0+.
+
 Description
 ==============
 Control your ESP32 projects with a PS3 controller!
